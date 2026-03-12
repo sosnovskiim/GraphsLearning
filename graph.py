@@ -1,3 +1,6 @@
+from collections import deque
+
+
 class Graph:
     def __init__(self, directed=False, weighted=False):
         self.directed = directed
@@ -126,6 +129,101 @@ class Graph:
                 result.append((u, degree))
         return result
 
+    def get_symmetric_difference(self, other):
+        if not self.directed or not other.directed:
+            raise ValueError("Ошибка: симметрическая разность определена только для орграфов")
+
+        result = Graph(directed=True, weighted=False)
+        vertexes = set(self.adjacency.keys()) | set(other.adjacency.keys())
+        for v in vertexes:
+            result.add_vertex(v)
+
+        for u in vertexes:
+            for v in vertexes:
+                if u not in self.adjacency or u not in other.adjacency:
+                    continue
+                if (v in self.adjacency[u]) != (v in other.adjacency[u]):
+                    result.add_edge(u, v)
+
+        return result
+
+    def __dfs(self, curr, end, path, visited):
+        path = path + [curr]
+        if curr == end:
+            return [path]
+        paths = []
+        for neighbor in self.adjacency[curr]:
+            if neighbor not in visited:
+                new_paths = self.__dfs(neighbor, end, path, visited | {neighbor})
+                paths.extend(new_paths)
+        return paths
+
+    def get_all_paths_between(self, start, end):
+        if start not in self.adjacency or end not in self.adjacency:
+            raise ValueError("Ошибка: обе вершины должны существовать")
+        if start == end:
+            return []
+        return self.__dfs(start, end, [], {start})
+
+    def get_shortest_distances_to(self, target):
+        if target not in self.adjacency:
+            raise ValueError(f"Ошибка: вершина '{target}' не существует")
+
+        adjacency_reverse = {v: {} for v in self.adjacency}
+        for u in self.adjacency:
+            for v, w in self.adjacency[u].items():
+                adjacency_reverse[v][u] = w
+
+        distances = {}
+        queue = deque([target])
+        distances[target] = 0
+        while queue:
+            curr = queue.popleft()
+            for neighbor in adjacency_reverse[curr]:
+                if neighbor not in distances:
+                    distances[neighbor] = distances[curr] + 1
+                    queue.append(neighbor)
+        return distances
+
+    def __find_parent(self, v, parent):
+        if parent[v] != v:
+            parent[v] = self.__find_parent(parent[v], parent)
+        return parent[v]
+
+    def get_kruskal_mst(self):
+        if self.directed or not self.weighted:
+            raise ValueError("Ошибка: для алгоритм Краскала требуется неориентированный взвешенный граф")
+
+        edges = self.get_edges()
+        edges.sort(key=lambda e: e[2])
+
+        parent = {}
+        rank = {}
+        for v in self.adjacency:
+            parent[v] = v
+            rank[v] = 0
+
+        mst = Graph(directed=False, weighted=True)
+        for v in self.adjacency:
+            mst.add_vertex(v)
+
+        for u, v, w in edges:
+            if self.__find_parent(u, parent) != self.__find_parent(v, parent):
+                ru = self.__find_parent(u, parent)
+                rv = self.__find_parent(v, parent)
+                if ru == rv:
+                    continue
+                if rank[ru] < rank[rv]:
+                    parent[ru] = rv
+                elif rank[ru] > rank[rv]:
+                    parent[rv] = ru
+                else:
+                    parent[rv] = ru
+                    rank[ru] += 1
+                mst.add_edge(u, v, w)
+
+        return mst
+
     def save_to_file(self, filename):
         with open(filename, "w", encoding="utf-8") as file_out:
             file_out.write(f"{int(self.directed)} {int(self.weighted)}\n")
@@ -148,7 +246,7 @@ class Graph:
                                 file_out.write(f"{u} {v}\n")
 
     def __str__(self):
-        lines = [f"Граф: {"" if self.directed else "не"}ориентированный, {"" if self.weighted else "не"}взвешенный"]
+        lines = []
         for v in sorted(self.adjacency.keys()):
             neighbors = self.adjacency[v]
             if neighbors:

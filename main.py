@@ -49,6 +49,14 @@ class GraphApp:
                     self.__get_out_neighbors()
                 elif command == "outdg":
                     self.__get_vertexes_with_greater_out_degree()
+                elif command == "symd":
+                    self.__get_symmetric_difference()
+                elif command == "allp":
+                    self.__get_all_paths_between()
+                elif command == "mind":
+                    self.__get_shortest_distances_to()
+                elif command == "mst":
+                    self.__get_kruskal_mst()
                 else:
                     print("Ошибка: неизвестная команда, введите 'help' для просмотра доступных команд")
             except Exception as e:
@@ -174,7 +182,11 @@ class GraphApp:
 
     def __show_graph(self):
         self.__check_current()
-        print(self.graphs[self.current])
+        graph = self.graphs[self.current]
+        directed_str = f"{"" if graph.directed else "не"}ориентированный"
+        weighted_str = f"{"" if graph.weighted else "не"}взвешенный"
+        print(f"Граф '{self.current}': {directed_str}, {weighted_str}")
+        print(graph)
 
     def __add_vertex(self):
         self.__check_current()
@@ -256,6 +268,89 @@ class GraphApp:
             print(f"Вершины с полустепенью исхода больше, чем у '{v}':")
             print(", ".join([f"{u} ({degree})" for u, degree in result]))
 
+    def __get_symmetric_difference(self):
+        self.__check_current()
+        if len(self.graphs) < 2:
+            print("Ошибка: для выполнения операции нужно хотя бы два графа")
+            return
+
+        name1 = input("Введите имя первого графа: ").strip()
+        name2 = input("Введите имя второго графа: ").strip()
+        if name1 not in self.graphs or name2 not in self.graphs:
+            print("Ошибка: оба графа должны существовать")
+            return
+
+        graph1 = self.graphs[name1]
+        graph2 = self.graphs[name2]
+        try:
+            graph3 = graph1.get_symmetric_difference(graph2)
+        except ValueError as e:
+            print(e)
+            return
+
+        name3 = input("Введите имя нового графа: ").strip()
+        if not name3:
+            print("Ошибка: имя графа не может быть пустым")
+            return
+        if name3 in self.graphs:
+            print("Ошибка: граф с таким именем уже существует")
+            return
+        self.graphs[name3] = graph3
+        self.current = name3
+        print(f"Симметрическая разность '{name3}' создана и выбрана как текущий граф")
+
+    def __get_all_paths_between(self):
+        self.__check_current()
+        u = input("Начальная вершина: ").strip()
+        v = input("Конечная вершина: ").strip()
+        try:
+            graph = self.graphs[self.current]
+            paths = graph.get_all_paths_between(u, v)
+            if not paths:
+                print(f"Нет ни одного пути из '{u}' в '{v}'")
+            else:
+                print(f"Найдено {len(paths)} путей из '{u}' в '{v}':")
+                for i, path in enumerate(paths, 1):
+                    print(f"{i}: {' -> '.join(path)}")
+        except ValueError as e:
+            print(e)
+
+    def __get_shortest_distances_to(self):
+        self.__check_current()
+        v = input("Целевая вершина: ").strip()
+        try:
+            graph = self.graphs[self.current]
+            distances = graph.get_shortest_distances_to(v)
+            print(f"Кратчайшие расстояния (по числу дуг) до вершины '{v}':")
+            for v in sorted(graph.get_vertexes()):
+                if v in distances:
+                    print(f"{v}: {distances[v]}")
+                else:
+                    print(f"{v}: ...")
+        except ValueError as e:
+            print(e)
+
+    def __get_kruskal_mst(self):
+        self.__check_current()
+        graph = self.graphs[self.current]
+        try:
+            mst = graph.get_kruskal_mst()
+        except ValueError as e:
+            print(e)
+            return
+
+        name = input("Введите имя нового графа: ").strip()
+        if not name:
+            print("Ошибка: имя графа не может быть пустым")
+            return
+        if name in self.graphs:
+            print("Ошибка: граф с таким именем уже существует")
+            return
+
+        self.graphs[name] = mst
+        self.current = name
+        print(f"Минимальное остовное дерево '{name}' создано и выбрано как текущий граф")
+
     @staticmethod
     def __print_help():
         print("""
@@ -279,6 +374,10 @@ class GraphApp:
 Дополнительные команды:
 - outn  - показать все исходящие соседние вершины заданной
 - outdg - показать вершины с полустепенью исхода больше, чем у заданной
+- symd  - построить симметрическую разность двух орграфов
+- allp  - вывести все пути из одной вершины в другую
+- mind  - вывести длины кратчайших путей от всех вершин до заданной
+- mst   - построить минимальное остовное дерево методом Краскала
         """)
 
 
