@@ -57,6 +57,14 @@ class GraphApp:
                     self.__get_shortest_distances_to()
                 elif command == "mst":
                     self.__get_kruskal_mst()
+                elif command == "spb":
+                    self.__get_shortest_path_floyd()
+                elif command == "spf":
+                    self.__get_shortest_paths_bellman_ford()
+                elif command == "allsp":
+                    self.__get_all_shortest_paths_dijkstra()
+                elif command == "flow":
+                    self.__get_max_flow()
                 else:
                     print("Ошибка: неизвестная команда, введите 'help' для просмотра доступных команд")
             except Exception as e:
@@ -351,6 +359,121 @@ class GraphApp:
         self.current = name
         print(f"Минимальное остовное дерево '{name}' создано и выбрано как текущий граф")
 
+    # def __get_shortest_path_bellman_ford(self):
+    #     self.__check_current()
+    #     u = input("Начальная вершина: ").strip()
+    #     v = input("Конечная вершина: ").strip()
+    #     try:
+    #         g = self.graphs[self.current]
+    #         distance, parent = g.get_shortest_path_bellman_ford(u, v)
+    #         if distance == float("inf"):
+    #             print(f"Нет ни одного пути из '{u}' в '{v}'")
+    #         else:
+    #             path = g.restore_path_from_parent(parent, v)
+    #             print(f"Кратчайшее расстояние от '{u}' до '{v}': {distance}")
+    #             print("Путь:", " -> ".join(path))
+    #     except ValueError as e:
+    #         print(e)
+    #
+    # def __get_shortest_paths_dijkstra(self):
+    #     self.__check_current()
+    #     u = input("Начальная вершина: ").strip()
+    #     try:
+    #         g = self.graphs[self.current]
+    #         distance, parent = g.get_shortest_paths_dijkstra(u)
+    #         print(f"Кратчайшие расстояния от вершины '{u}':")
+    #         for v in sorted(distance.keys()):
+    #             if distance[v] == float("inf"):
+    #                 print(f"{v}: ...")
+    #             else:
+    #                 path = g.restore_path_from_parent(parent, v)
+    #                 print(f"{v}: {distance[v]} ({" -> ".join(path)})")
+    #     except ValueError as e:
+    #         print(e)
+    #
+    # def __get_all_shortest_paths_floyd(self):
+    #     self.__check_current()
+    #     g = self.graphs[self.current]
+    #     try:
+    #         distances, next = g.get_all_shortest_paths_floyd()
+    #         vertexes = sorted(g.get_vertexes())
+    #         print("Кратчайшие расстояния между всеми парами вершин:")
+    #         for u in vertexes:
+    #             for v in vertexes:
+    #                 if u == v:
+    #                     continue
+    #                 d = distances[u][v]
+    #                 if d == float("inf"):
+    #                     print(f"{u} -> {v}: ...")
+    #                 else:
+    #                     path = g.restore_path_floyd(next, u, v)
+    #                     print(f"{u} -> {v}: {d} ({" -> ".join(path)})")
+    #     except ValueError as e:
+    #         print(e)
+
+    def __get_shortest_path_floyd(self):
+        self.__check_current()
+        u = input("Начальная вершина: ").strip()
+        v = input("Конечная вершина: ").strip()
+        try:
+            g = self.graphs[self.current]
+            dist, next = g.get_shortest_path_floyd(u, v)
+            if dist == float("inf"):
+                print(f"Нет ни одного пути из '{u}' в '{v}'")
+            else:
+                path = g.restore_path_floyd(next, u, v)
+                print(f"Кратчайшее расстояние от '{u}' до '{v}': {dist}")
+                print("Путь:", " -> ".join(path))
+        except ValueError as e:
+            print(e)
+
+    def __get_shortest_paths_bellman_ford(self):
+        self.__check_current()
+        u = input("Начальная вершина: ").strip()
+        try:
+            g = self.graphs[self.current]
+            dist, parent = g.get_shortest_paths_bellman_ford(u)
+            print(f"Кратчайшие расстояния от вершины '{u}':")
+            for v in sorted(dist.keys()):
+                if dist[v] == float("inf"):
+                    print(f"{v}: ...")
+                else:
+                    path = g.restore_path_from_parent(parent, v)
+                    print(f"{v}: {dist[v]} ({" -> ".join(path)})")
+        except ValueError as e:
+            print(e)
+
+    def __get_all_shortest_paths_dijkstra(self):
+        self.__check_current()
+        try:
+            g = self.graphs[self.current]
+            all_dist, all_parent = g.get_all_shortest_paths_dijkstra()
+            vertexes = sorted(g.get_vertexes())
+            print("Кратчайшие расстояния между всеми парами вершин:")
+            for u in vertexes:
+                for v in vertexes:
+                    if u == v:
+                        continue
+                    d = all_dist[u][v]
+                    if d == float("inf"):
+                        print(f"{u} -> {v}: ...")
+                    else:
+                        path = g.restore_path_from_parent(all_parent[u], v)
+                        print(f"{u} -> {v}: {d} ({" -> ".join(path)})")
+        except ValueError as e:
+            print(e)
+
+    def __get_max_flow(self):
+        self.__check_current()
+        g = self.graphs[self.current]
+        source = input("Источник: ").strip()
+        sink = input("Сток: ").strip()
+        try:
+            flow = g.get_max_flow(source, sink)
+            print(f"Максимальный поток из '{source}' в '{sink}': {flow}")
+        except ValueError as e:
+            print(e)
+
     @staticmethod
     def __print_help():
         print("""
@@ -378,6 +501,10 @@ class GraphApp:
 - allp  - вывести все пути из одной вершины в другую
 - mind  - вывести длины кратчайших путей от всех вершин до заданной
 - mst   - построить минимальное остовное дерево методом Краскала
+- spb   - кратчайший путь из одной вершины в другую
+- spf   - кратчайшие пути из одной вершины во все остальные
+- allsp - кратчайшие пути между всеми парами вершин
+- flow  - максимальный поток от источника к стоку
         """)
 
 

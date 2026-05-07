@@ -1,4 +1,5 @@
-from collections import deque
+import heapq
+from collections import defaultdict, deque
 
 
 class Graph:
@@ -223,6 +224,267 @@ class Graph:
                 mst.add_edge(u, v, w)
 
         return mst
+
+    # def get_shortest_path_bellman_ford(self, start, end):
+    #     if start not in self.adjacency or end not in self.adjacency:
+    #         raise ValueError("Ошибка: обе вершины должны существовать")
+    #
+    #     inf = float("inf")
+    #     d = {v: inf for v in self.adjacency}
+    #     parent = {v: None for v in self.adjacency}
+    #     d[start] = 0
+    #
+    #     edges = []
+    #     for u in self.adjacency:
+    #         for v, w in self.adjacency[u].items():
+    #             edges.append((u, v, w))
+    #
+    #     for _ in range(len(self.adjacency) - 1):
+    #         is_updated = False
+    #         for u, v, w in edges:
+    #             if d[u] != inf and d[v] > d[u] + w:
+    #                 d[v] = d[u] + w
+    #                 parent[v] = u
+    #                 is_updated = True
+    #         if not is_updated:
+    #             break
+    #
+    #     for u, v, w in edges:
+    #         if d[u] != inf and d[v] > d[u] + w:
+    #             raise ValueError("Ошибка: граф содержит отрицательный цикл")
+    #
+    #     if d[end] == inf:
+    #         return inf, []
+    #     return d[end], parent
+    #
+    # @staticmethod
+    # def restore_path_from_parent(parent, end):
+    #     path = []
+    #     curr = end
+    #     while curr is not None:
+    #         path.append(curr)
+    #         curr = parent[curr]
+    #     path.reverse()
+    #     return path
+    #
+    # def get_shortest_paths_dijkstra(self, start):
+    #     if start not in self.adjacency:
+    #         raise ValueError(f"Ошибка: вершина '{start}' не существует")
+    #     if self.weighted and any(w < 0 for neighbors in self.adjacency.values() for w in neighbors.values()):
+    #         raise ValueError("Ошибка: алгоритм Дейкстры не работает с отрицательными весами")
+    #
+    #     inf = float("inf")
+    #     d = {v: inf for v in self.adjacency}
+    #     parent = {v: None for v in self.adjacency}
+    #     d[start] = 0
+    #     q = [(0, start)]
+    #
+    #     while q:
+    #         curr_dist, u = heapq.heappop(q)
+    #         if curr_dist > d[u]:
+    #             continue
+    #         for v, w in self.adjacency[u].items():
+    #             new_dist = curr_dist + w
+    #             if d[v] > new_dist:
+    #                 d[v] = new_dist
+    #                 parent[v] = u
+    #                 heapq.heappush(q, (new_dist, v))
+    #     return d, parent
+    #
+    # def get_all_shortest_paths_floyd(self):
+    #     vertexes = list(self.adjacency.keys())
+    #     d = {u: {v: float("inf") for v in vertexes} for u in vertexes}
+    #     next = {u: {v: None for v in vertexes} for u in vertexes}
+    #
+    #     for u in vertexes:
+    #         d[u][u] = 0
+    #         for v, w in self.adjacency[u].items():
+    #             d[u][v] = w
+    #             next[u][v] = v
+    #
+    #     for k in vertexes:
+    #         for i in vertexes:
+    #             for j in vertexes:
+    #                 if d[i][j] > d[i][k] + d[k][j]:
+    #                     d[i][j] = d[i][k] + d[k][j]
+    #                     next[i][j] = next[i][k]
+    #
+    #     for u in vertexes:
+    #         if d[u][u] < 0:
+    #             raise ValueError("Ошибка: граф содержит отрицательный цикл")
+    #
+    #     return d, next
+    #
+    # @staticmethod
+    # def restore_path_floyd(next, u, v):
+    #     path = [u]
+    #     while u != v:
+    #         u = next[u][v]
+    #         path.append(u)
+    #     return path
+
+    def get_shortest_path_floyd(self, start, end):
+        if start not in self.adjacency or end not in self.adjacency:
+            raise ValueError("Ошибка: обе вершины должны существовать")
+
+        inf = float("inf")
+        vertexes = list(self.adjacency.keys())
+        d = {u: {v: inf for v in vertexes} for u in vertexes}
+        next = {u: {v: None for v in vertexes} for u in vertexes}
+
+        for u in vertexes:
+            d[u][u] = 0
+            for v, w in self.adjacency[u].items():
+                d[u][v] = w
+                next[u][v] = v
+
+        for k in vertexes:
+            for i in vertexes:
+                for j in vertexes:
+                    if d[i][j] > d[i][k] + d[k][j]:
+                        d[i][j] = d[i][k] + d[k][j]
+                        next[i][j] = next[i][k]
+
+        for v in vertexes:
+            if d[v][v] < 0:
+                raise ValueError("Ошибка: граф содержит отрицательный цикл")
+
+        if d[start][end] == inf:
+            return inf, []
+
+        return d[start][end], next
+
+    @staticmethod
+    def restore_path_floyd(next, u, v):
+        path = [u]
+        while u != v:
+            u = next[u][v]
+            path.append(u)
+        return path
+
+    def get_shortest_paths_bellman_ford(self, start):
+        if not self.directed:
+            raise ValueError(f"Ошибка: текущий граф неориентированный")
+
+        if start not in self.adjacency:
+            raise ValueError(f"Ошибка: вершина '{start}' не существует")
+
+        inf = float("inf")
+        d = {v: inf for v in self.adjacency}
+        parent = {v: None for v in self.adjacency}
+        d[start] = 0
+
+        edges = []
+        for u in self.adjacency:
+            for v, w in self.adjacency[u].items():
+                edges.append((u, v, w))
+
+        for _ in range(len(self.adjacency) - 1):
+            is_updated = False
+            for u, v, w in edges:
+                if d[u] != inf and d[v] > d[u] + w:
+                    d[v] = d[u] + w
+                    parent[v] = u
+                    is_updated = True
+            if not is_updated:
+                break
+
+        for u, v, w in edges:
+            if d[u] != inf and d[v] > d[u] + w:
+                raise ValueError("Ошибка: граф содержит отрицательный цикл")
+
+        return d, parent
+
+    @staticmethod
+    def restore_path_from_parent(parent, end):
+        path = []
+        curr = end
+        while curr is not None:
+            path.append(curr)
+            curr = parent[curr]
+        path.reverse()
+        return path
+
+    def get_all_shortest_paths_dijkstra(self):
+        if self.weighted and any(w < 0 for neighbors in self.adjacency.values() for w in neighbors.values()):
+            raise ValueError("Ошибка: алгоритм Дейкстры не работает с отрицательными весами")
+
+        vertexes = list(self.adjacency.keys())
+        all_dist = {v: {} for v in vertexes}
+        all_parent = {v: {} for v in vertexes}
+
+        for start in vertexes:
+            dist, parent = self.__get_shortest_paths_dijkstra(start)
+            for v in vertexes:
+                all_dist[start][v] = dist[v]
+                all_parent[start][v] = parent[v]
+        return all_dist, all_parent
+
+    def __get_shortest_paths_dijkstra(self, start):
+        d = {v: float("inf") for v in self.adjacency}
+        parent = {v: None for v in self.adjacency}
+        d[start] = 0
+        q = [(0, start)]
+
+        while q:
+            curr_dist, u = heapq.heappop(q)
+            if curr_dist > d[u]:
+                continue
+            for v, w in self.adjacency[u].items():
+                new_dist = curr_dist + w
+                if d[v] > new_dist:
+                    d[v] = new_dist
+                    parent[v] = u
+                    heapq.heappush(q, (new_dist, v))
+        return d, parent
+
+    def get_max_flow(self, source, sink):
+        if not self.directed:
+            raise ValueError(f"Ошибка: текущий граф неориентированный")
+        if source not in self.adjacency or sink not in self.adjacency:
+            raise ValueError("Ошибка: источник или сток не существуют")
+        if source == sink:
+            raise ValueError("Ошибка: источник и сток должны отличаться")
+
+        residual = defaultdict(lambda: defaultdict(int))
+        for u in self.adjacency:
+            for v, w in self.adjacency[u].items():
+                residual[u][v] = w
+
+        total_flow = 0
+        inf = float("inf")
+
+        while True:
+            parent = {}
+            parent[source] = source
+            q = deque([source])
+            while q and sink not in parent:
+                u = q.popleft()
+                for v, capacity in residual[u].items():
+                    if capacity > 0 and v not in parent:
+                        parent[v] = u
+                        q.append(v)
+
+            if sink not in parent:
+                break
+
+            bottleneck = inf
+            v = sink
+            while v != source:
+                u = parent[v]
+                bottleneck = min(bottleneck, residual[u][v])
+                v = u
+
+            v = sink
+            while v != source:
+                u = parent[v]
+                residual[u][v] -= bottleneck
+                residual[v][u] += bottleneck
+                v = u
+
+            total_flow += bottleneck
+
+        return total_flow
 
     def save_to_file(self, filename):
         with open(filename, "w", encoding="utf-8") as file_out:
