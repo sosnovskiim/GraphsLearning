@@ -11,4 +11,3 @@ g f
 g h
 h i
 i d
-j j

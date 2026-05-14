@@ -12,6 +12,6 @@ d h 2
 e j 3
 f i 4
 g i 3
-g j 2
+g j 4
 h i 3
 i j 5

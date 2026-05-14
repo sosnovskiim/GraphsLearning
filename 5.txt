@@ -1,22 +1,20 @@
 0 1
 a b c d e f g h i j
-a a 1
 a b 4
+a c 13
 a d 10
 b c 9
-b d 13
+b f 15
 c d 8
 c e 12
 c f 6
 d e 11
-e e 4
-e f 15
 e i 17
 e j 31
 f g 3
 f j 16
 g h 21
-g i 25
+g j 13
 h i 12
+h j 18
 i j 8
-j j 2
